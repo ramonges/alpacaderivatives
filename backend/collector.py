@@ -30,6 +30,9 @@ class OptionsDataCollector:
         try:
             logger.info(f"Starting data collection for {SYMBOL}")
             
+            # Verify we're getting S&P 500 (SPY) options
+            self.alpaca_client.verify_sp500_options()
+            
             # Fetch options data from Alpaca
             options_data = self.alpaca_client.get_all_options_data()
             

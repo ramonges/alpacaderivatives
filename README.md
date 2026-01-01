@@ -41,12 +41,30 @@ ALPACA_SECRET_KEY=your_secret_key_here
 ALPACA_BASE_URL=https://paper-api.alpaca.markets
 ```
 
-4. Run the data collector (one-time):
+4. **Verify S&P 500 Options Collection**:
+   - The system is configured to fetch SPY (S&P 500 ETF) options
+   - The collector will verify this on each run
+
+5. **Collect Current Options Data** (one-time):
 ```bash
 python backend/collector.py
 ```
 
-5. For continuous data collection (every 15 minutes), modify `backend/collector.py` and uncomment:
+6. **Backfill Historical S&P 500 Options Data**:
+   - Alpaca provides historical options data from February 2024 onwards
+   - To backfill historical data:
+```bash
+# Backfill last 30 days (default)
+python backend/historical_backfill.py
+
+# Backfill specific date range
+python backend/historical_backfill.py --start-date 2024-02-01 --end-date 2024-03-01
+
+# Backfill weekly data (faster, less granular)
+python backend/historical_backfill.py --start-date 2024-02-01 --end-date 2024-03-01 --step 7
+```
+
+7. **For Continuous Data Collection** (every 15 minutes), modify `backend/collector.py` and uncomment:
 ```python
 collector.run_continuous(interval_minutes=15)
 ```
@@ -106,6 +124,35 @@ Interactive visualization of option Greeks:
 ### IV Evolution
 Tracks how implied volatility changes as options approach expiration, helping identify volatility patterns and trading opportunities.
 
+## Historical Data Collection
+
+### Backfilling Historical S&P 500 Options Data
+
+The system includes a historical backfill script to download past options data:
+
+**Important Notes:**
+- Alpaca historical options data is available from **February 2024 onwards**
+- Historical data helps build the IV Evolution chart over time
+- The backfill script automatically skips duplicate records
+
+**Usage Examples:**
+```bash
+# Backfill last 30 days (default)
+python backend/historical_backfill.py
+
+# Backfill specific date range
+python backend/historical_backfill.py --start-date 2024-02-15 --end-date 2024-03-15
+
+# Weekly backfill (faster, less data points)
+python backend/historical_backfill.py --start-date 2024-02-01 --end-date 2024-12-31 --step 7
+```
+
+**What Gets Stored:**
+- Historical option prices (open, high, low, close)
+- Volume data
+- Calculated Greeks for each historical point
+- IV evolution tracking over time
+
 ## Continuous Data Collection
 
 The backend collector can run continuously to keep your database updated. You can:
@@ -113,6 +160,8 @@ The backend collector can run continuously to keep your database updated. You ca
 1. Run it as a background process
 2. Set up a cron job
 3. Deploy it as a scheduled cloud function
+
+**Note:** The collector automatically verifies it's fetching S&P 500 (SPY) options on each run.
 
 ## Troubleshooting
 
