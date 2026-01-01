@@ -2,7 +2,7 @@
 Alpaca API client for fetching options data
 """
 from alpaca.data.historical import StockHistoricalDataClient
-from alpaca.data.requests import OptionContractsRequest, OptionSnapshotRequest, OptionBarsRequest
+from alpaca.data.requests import OptionChainRequest, OptionSnapshotRequest, OptionBarsRequest
 from alpaca.trading.client import TradingClient
 from backend.config import ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_BASE_URL, SYMBOL
 import logging
@@ -37,23 +37,40 @@ class AlpacaOptionsClient:
             List of option contract dictionaries
         """
         try:
-            request_params = OptionContractsRequest(
+            request_params = OptionChainRequest(
                 underlying_symbol=self.symbol,
                 expiration_date=expiration_date
             )
             
-            contracts = self.data_client.get_option_contracts(request_params)
+            chain = self.data_client.get_option_chain(request_params)
+            contracts = chain if chain else []
             
             contracts_list = []
+            # Handle both list and dict responses
+            if isinstance(contracts, dict):
+                # If it's a dict, extract contracts from it
+                contracts = list(contracts.values()) if contracts else []
+            
             for contract in contracts:
-                contracts_list.append({
-                    'symbol': contract.symbol,
-                    'underlying_symbol': contract.underlying_symbol,
-                    'expiration_date': contract.expiration_date.isoformat() if contract.expiration_date else None,
-                    'strike_price': float(contract.strike_price) if contract.strike_price else None,
-                    'option_type': contract.option_type.value if contract.option_type else None,
-                    'contract_type': contract.contract_type.value if contract.contract_type else None,
-                })
+                # Handle different contract object structures
+                if hasattr(contract, 'symbol'):
+                    contracts_list.append({
+                        'symbol': getattr(contract, 'symbol', ''),
+                        'underlying_symbol': getattr(contract, 'underlying_symbol', self.symbol),
+                        'expiration_date': contract.expiration_date.isoformat() if hasattr(contract, 'expiration_date') and contract.expiration_date else None,
+                        'strike_price': float(contract.strike_price) if hasattr(contract, 'strike_price') and contract.strike_price else None,
+                        'option_type': contract.option_type.value if hasattr(contract, 'option_type') and contract.option_type else None,
+                        'contract_type': contract.contract_type.value if hasattr(contract, 'contract_type') and contract.contract_type else None,
+                    })
+                elif isinstance(contract, dict):
+                    contracts_list.append({
+                        'symbol': contract.get('symbol', ''),
+                        'underlying_symbol': contract.get('underlying_symbol', self.symbol),
+                        'expiration_date': contract.get('expiration_date'),
+                        'strike_price': float(contract['strike_price']) if contract.get('strike_price') else None,
+                        'option_type': contract.get('option_type'),
+                        'contract_type': contract.get('contract_type'),
+                    })
             
             logger.info(f"Fetched {len(contracts_list)} option contracts")
             return contracts_list

@@ -51,8 +51,11 @@ export default function Greeks({ expirationDate }: GreeksProps) {
       }))
 
       setGreeksData(formattedData)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching Greeks data:', error)
+      if (error?.code === 'PGRST116' || error?.message?.includes('404') || error?.message?.includes('NOT_FOUND')) {
+        console.error('Table does not exist. Please run the SQL schema in Supabase.')
+      }
     } finally {
       setLoading(false)
     }

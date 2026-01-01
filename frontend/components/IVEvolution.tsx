@@ -86,8 +86,11 @@ export default function IVEvolution({ expirationDate }: IVEvolutionProps) {
       if (!selectedStrike && strikes.length > 0) {
         setSelectedStrike(strikes[Math.floor(strikes.length / 2)]) // Select middle strike
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching IV evolution data:', error)
+      if (error?.code === 'PGRST116' || error?.message?.includes('404') || error?.message?.includes('NOT_FOUND')) {
+        console.error('Table does not exist. Please run the SQL schema in Supabase.')
+      }
     } finally {
       setLoading(false)
     }

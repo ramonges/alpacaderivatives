@@ -33,8 +33,11 @@ export default function Home() {
         setSelectedExpiration(uniqueDates[0])
       }
       setLoading(false)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching expiration dates:', error)
+      if (error?.code === 'PGRST116' || error?.message?.includes('404') || error?.message?.includes('NOT_FOUND')) {
+        console.error('⚠️ Tables do not exist. Please run supabase_schema.sql in Supabase SQL Editor.')
+      }
       setLoading(false)
     }
   }
